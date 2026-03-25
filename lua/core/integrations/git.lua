@@ -26,6 +26,10 @@ local function setup_signs(opts)
   vim.fn.sign_define("GitSignsAdd", { text = opts.staged.add, texthl = "GitSignsAdd" })
   vim.fn.sign_define("GitSignsChange", { text = opts.staged.change, texthl = "GitSignsChange" })
   vim.fn.sign_define("GitSignsDelete", { text = opts.staged.delete, texthl = "GitSignsDelete" })
+
+  vim.api.nvim_set_hl(0, "GitSignsAdd", { ctermbg = 0, fg = '#98c379', bg = 'NONE' })
+  vim.api.nvim_set_hl(0, "GitSignsChange", { ctermbg = 0, fg = '#61afef', bg = 'NONE' })
+  vim.api.nvim_set_hl(0, "GitSignsDelete", { ctermbg = 0, fg = '#993939', bg = 'NONE' })
 end
 
 local function update_signs()

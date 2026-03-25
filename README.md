@@ -184,24 +184,14 @@ folder as this config `init.lua`.
 ```lua -- ~/.config/nvim/early_init.lua
 
 -- Or change the default colorscheme (see "Colorschemes" section below)
-vim.g.purevim_colorscheme = "gruvbox"
+vim.g.purevim_colorscheme = "gruvbox8"
 ```
-
-> [!NOTE]
->
-> ### Colorschemes
->
-> PureVim comes with extra colorschemes:
->
-> - `catppuccin` (the default)
-> - `gruvbox`
 
 You can also turn `PureVim` special features on/off, or even customize its
 setup. Just comment/uncomment what you need!
 
 ```lua
 vim.g.purevim_features = {
-	-- colorscheme = false, -- disable colorscheme
 	-- dashboard = false, -- disable dashboard
 	-- fzf = { -- configure FZF or set to false to disable
 	-- 	position = "bottom",

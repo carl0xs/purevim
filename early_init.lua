@@ -4,8 +4,7 @@
 -- Example: change leader key before loading keymaps
 vim.g.mapleader = " "
 
--- Example: change the default colorscheme (see "Colorschemes" section below)
--- vim.g.purevim_colorscheme = "gruvbox"
+vim.cmd("colorscheme gruvbox8")
 
 -- Example: Feature toggles (users can set these in early_init.lua)
 vim.g.purevim_features = {
