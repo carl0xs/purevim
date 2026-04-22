@@ -18,4 +18,12 @@ vim.g.purevim_features = {
 	-- },
 	-- lsp = false, -- disable LSP
 	-- lazygit = false, -- disable lazygit
+	-- format = {
+	-- 	typescript = { "prettier" },
+	-- 	javascript = { "prettier" },
+	-- 	html = { "biome" },
+	-- 	rust = { "lsp" },
+	-- 	ruby = { "rubocop" }
+	-- 	nix =	 { "nixfmt" }
+	-- },
 }

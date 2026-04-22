@@ -63,5 +63,9 @@ run_if_feat_enabled("dashboard", function()
 	require("core.dashboard").setup()
 end)
 
+run_if_feat_enabled("format", function(opts)
+	require("core.format").setup(opts)
+end)
+
 -- Load optional post_init.lua file
 pcall(require, "post_init")
