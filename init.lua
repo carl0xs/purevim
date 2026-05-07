@@ -5,6 +5,8 @@ _G.start_time = vim.loop.hrtime()
 
 package.path = package.path .. ";" .. vim.fn.stdpath("config") .. "/?.lua"
 
+local later = require("utils.util").later
+
 -- Load optional early_init.lua file
 pcall(require, "early_init")
 
@@ -17,13 +19,23 @@ local function run_if_feat_enabled(feature, fn)
 	if conf == false then
 		return
 	end
-	fn(conf) -- pass feature configuration if available
+	later(function()
+		fn(conf)
+	end) -- pass feature configuration if available
 end
 
 -- Core modules
-require("core.options")
-require("core.keymaps")
-require("core.integrations.git").setup()
+
+later(function()
+	require("core.options")
+end)
+later(function()
+	require("core.keymaps")
+end)
+
+later(function()
+	require("core.integrations.git").setup()
+end)
 
 -- Optional modules
 run_if_feat_enabled("lsp", function()
@@ -62,7 +74,7 @@ end)
 run_if_feat_enabled("dashboard", function()
 	require("core.dashboard").setup()
 end)
-
+--
 run_if_feat_enabled("format", function(opts)
 	require("core.format").setup(opts)
 end)

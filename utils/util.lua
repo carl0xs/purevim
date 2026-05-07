@@ -1,8 +1,14 @@
 local M = { path = {} }
 
+local nvim_eleven = vim.fn.has("nvim-0.11") == 1
+
+function M.later(fn)
+	vim.defer_fn(fn, 0)
+end
+
 function M.search_ancestors(startpath, func)
 	if nvim_eleven then
-		validate("func", func, "function")
+		vim.validate("func", func, "function")
 	end
 	if func(startpath) then
 		return startpath
@@ -31,6 +37,10 @@ function M.strip_archive_subpath(path)
 	path = vim.fn.substitute(path, "zipfile://\\(.\\{-}\\)::[^\\\\].*$", "\\1", "")
 	path = vim.fn.substitute(path, "tarfile:\\(.\\{-}\\)::.*$", "\\1", "")
 	return path
+end
+
+local function escape_wildcards(path)
+	return path:gsub("([%[%]%?%*])", "\\%1")
 end
 
 function M.root_pattern(...)
