@@ -132,27 +132,71 @@ map("n", "<leader>gD", function()
 end, { desc = "Git diff entire repo in disposable buffer" })
 
 map("n", "<leader>ga", function()
-  local file = vim.fn.expand("%")
-  if file == "" then
-    vim.notify("No file name for current buffer", vim.log.levels.WARN)
-    return
-  end
+	local file = vim.fn.expand("%")
+	if file == "" then
+		vim.notify("No file name for current buffer", vim.log.levels.WARN)
+		return
+	end
 
-  local buf = vim.api.nvim_create_buf(false, true)
+	local cursor_line = vim.fn.line(".")
+	local original_win = vim.api.nvim_get_current_win()
 
-  local annotate = vim.fn.systemlist({ "git", "annotate", file })
-  if vim.v.shell_error ~= 0 then
-    vim.notify("git annotate failed or repo not found", vim.log.levels.WARN)
-    return
-  end
+	local buf = vim.api.nvim_create_buf(false, true)
+	local annotate = vim.fn.systemlist({ "git", "annotate", file })
 
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, annotate)
-  vim.bo[buf].filetype = "git"
-  vim.bo[buf].modifiable = true
-  vim.bo[buf].buflisted = false
+	for i, line in ipairs(annotate) do
+		local trimmed = line:match("^(%x+%s+%([^)]*%d+%))")
+		if trimmed then
+			annotate[i] = trimmed
+		end
+	end
 
-  vim.cmd("topleft vsplit")
-  vim.api.nvim_win_set_buf(0, buf)
+	if vim.v.shell_error ~= 0 then
+		vim.notify("git annotate failed or repo not found", vim.log.levels.WARN)
+		return
+	end
+
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, annotate)
+
+	vim.api.nvim_buf_call(buf, function()
+		vim.cmd([[
+              syntax match GitAnnotateHash /^\x\+/
+              syntax match GitAnnotateAuthor /(\zs[^)]*\d\{4\}-\d\{2\}-\d\{2\}/
+              syntax match GitAnnotateLineNr /\d\+)$/
+              highlight default link GitAnnotateHash Identifier
+              highlight default link GitAnnotateAuthor String
+              highlight default link GitAnnotateLineNr LineNr
+          ]])
+	end)
+
+	vim.bo[buf].modifiable = false
+	vim.bo[buf].buflisted = false
+
+	vim.cmd("topleft vsplit")
+	vim.api.nvim_win_set_buf(0, buf)
+
+	local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+	local max_width = 0
+	for _, l in ipairs(lines) do
+		local w = vim.fn.strdisplaywidth(l)
+		if w > max_width then
+			max_width = w
+		end
+	end
+
+	local final_width = max_width + 2
+	local win = vim.api.nvim_get_current_win()
+	vim.api.nvim_win_set_width(win, final_width)
+
+	local line_count = vim.api.nvim_buf_line_count(buf)
+	local target = math.min(cursor_line, line_count)
+	vim.api.nvim_win_set_cursor(0, { target, 0 })
+
+	vim.wo.scrollbind = true
+	vim.api.nvim_win_set_option(original_win, "scrollbind", true)
+	vim.wo[original_win].foldenable = false
+	vim.cmd("syncbind")
+	vim.api.nvim_set_current_win(original_win)
 end, { desc = "Git annotate current file" })
 
 -- Search (find and grep)

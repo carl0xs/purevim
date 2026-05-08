@@ -46,6 +46,9 @@ This configuration is designed to be lightweight and fast:
 
 - Neovim >= 0.10.0
 - A terminal with true color support
+- A [Nerd Font](https://www.nerdfonts.com/) installed and set as your terminal font (required for dashboard icons)
+  - [JetBrainsMono Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/latest) is recommended (used in screenshots)
+  - Quick installer: [nerd-installer](https://github.com/LionyxML/nerd-installer)
 - LSP servers for your languages
 - [Lazygit (Install)](https://github.com/jesseduffield/lazygit)
 - ripgrep
