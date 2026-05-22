@@ -1,46 +1,40 @@
-local opt = vim.opt
-local g = vim.g
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
 
-g.mapleader = " "
-g.maplocalleader = " "
-
-opt.winborder = "single"
-
-opt.fillchars = { eob = " " }
-
-opt.updatetime = 1000
-opt.cursorline = true
-opt.number = true
-opt.signcolumn = "yes"
-opt.termguicolors = true
-opt.showcmd = true
-opt.conceallevel = 0
-opt.wrap = false
-
-opt.shiftwidth = 2
-opt.tabstop = 2
-opt.softtabstop = 2
-opt.smartindent = true
-
-opt.hlsearch = true
-opt.ignorecase = true
-opt.smartcase = true
-
-opt.mouse = "a"
-opt.clipboard = "unnamedplus"
-opt.undofile = true
-
-opt.splitright = true
-opt.splitbelow = true
-
-opt.completeopt = "menu,menuone,noselect"
-
-opt.lazyredraw = true
-opt.hidden = true
+vim.opt.winborder = "single"
+vim.opt.fillchars = { eob = " " }
+vim.opt.updatetime = 1000
+vim.opt.cursorline = true
+vim.opt.number = true
+vim.opt.signcolumn = "yes"
+vim.opt.termguicolors = true
+vim.opt.showcmd = true
+vim.opt.conceallevel = 0
+vim.opt.wrap = false
+vim.opt.shiftwidth = 2
+vim.opt.tabstop = 2
+vim.opt.softtabstop = 2
+vim.opt.smartindent = true
+vim.opt.hlsearch = true
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+vim.opt.mouse = "a"
+vim.opt.clipboard = "unnamedplus"
+vim.opt.undofile = true
+vim.opt.splitright = true
+vim.opt.splitbelow = true
+vim.opt.completeopt = "menu,menuone,noselect"
+vim.opt.lazyredraw = true
+vim.opt.hidden = true
 -- see `:h completeopt`
-opt.completeopt = "menuone,noselect,popup,fuzzy"
-
 vim.opt.shortmess:append("I")
+
+-- native autocomplete (nvim -v 0.12)
+vim.opt.completeopt = "menuone,noselect,popup,fuzzy"
+vim.opt.complete:append('o')
+vim.o.autocomplete = true;
+vim.o.pumheight = 5
+vim.o.pumborder = 'rounded'
 
 vim.cmd([[
   hi Normal guibg=NONE ctermbg=NONE
@@ -53,7 +47,7 @@ vim.cmd([[
 
 local ok, extui = pcall(require, "vim._extui")
 if ok then
-  extui.enable({
-    enable = true,
-  })
+	extui.enable({
+		enable = true,
+	})
 end
