@@ -40,6 +40,8 @@ This configuration is designed to be lightweight and fast:
       (`<leader>gd` / `<leader>gD`), status in quickfix (`<leader>gs`)
 - [x] Native LSP configs in `lsp/` enabled with `vim.lsp.enable`
 - [x] Native tree-sitter highlighting and folding
+- [x] Editable file explorer in the spirit of
+      [oil.nvim](https://github.com/stevearc/oil.nvim), see below
 
 ## TODOs
 
@@ -220,6 +222,37 @@ vim.api.nvim_create_autocmd("User", {
 ```
 
 > `post_init.lua` was removed: the event above replaces it.
+
+## File explorer
+
+`-` opens the directory of the current file (also `nvim .`, `:e dir/`,
+`:Explore`, `:PureExplore [dir]`, `<leader>e`). It is a regular buffer: edit
+it with normal Vim motions and `:w` to apply the changes to the filesystem.
+
+| Edit in the buffer                     | Result on `:w`                 |
+| -------------------------------------- | ------------------------------ |
+| change a name (`cw`, `:s`, ...)        | rename                         |
+| `foo/bar.txt` as the new name          | move into `foo/` (created)     |
+| delete the line (`dd`)                 | delete (always asks first)     |
+| new line `name` / `name/`              | create file / directory        |
+| duplicate a line (`yyp`) and rename it | copy                           |
+| `dd` here, `p` in another explorer buf | move between directories       |
+
+Keys inside the explorer: `<CR>` open, `-` parent, `_` cwd, `g.` toggle
+hidden files, `<C-l>` refresh, `q` close.
+
+```lua
+-- early_init.lua
+vim.g.purevim_features = {
+	explorer = {
+		columns = { "permissions", "size", "mtime" }, -- or {} for names only
+		show_hidden = false,
+		-- no confirmation when there are no deletes and at most one move/copy
+		skip_confirm_for_simple_edits = true,
+	},
+	-- explorer = false, -- keep netrw / nvim.dir instead
+}
+```
 
 ## Contributing
 

@@ -14,6 +14,7 @@ vim.g.purevim_features = {
 	-- dashboard = false,
 	-- lazygit = false,
 	-- usql = false,
+	-- explorer = { columns = { "permissions", "size", "mtime" }, skip_confirm_for_simple_edits = true },
 	-- git = { signs = { staged = { add = "│", change = "│", delete = "_" } } },
 	-- lsp = { servers = { "lua_ls", "ts_ls" } }, -- or false to disable LSP
 	-- format = {
