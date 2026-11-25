@@ -36,6 +36,9 @@ local function join(dir, name)
 end
 
 local function normalize_dir(dir)
+	-- accept explorer buffer names too (`pure:///path/`, or `pure:/path` once
+	-- expand()/fnamemodify() collapsed the slashes)
+	dir = dir:gsub("^pure:/*", "/")
 	dir = vim.fs.normalize(vim.fs.abspath(dir))
 	return dir == "" and "/" or dir
 end
@@ -608,14 +611,20 @@ function M.setup(opts)
 	})
 	hijack(api.nvim_get_current_buf())
 
-	api.nvim_create_user_command("PureExplore", function(o)
-		M.open(o.args ~= "" and o.args or nil)
-	end, { nargs = "?", complete = "dir" })
+	-- Without a path: directory of the current file, or the parent directory
+	-- when already inside the explorer (same as `-`)
+	local function explore(o)
+		if o.args ~= "" then
+			M.open(o.args)
+		else
+			M.open_parent()
+		end
+	end
+
+	api.nvim_create_user_command("PureExplore", explore, { nargs = "?", complete = "dir" })
 
 	if vim.fn.exists(":Explore") ~= 2 then
-		api.nvim_create_user_command("Explore", function(o)
-			M.open(o.args ~= "" and o.args or vim.fn.expand("%:p:h"))
-		end, { nargs = "?", complete = "dir" })
+		api.nvim_create_user_command("Explore", explore, { nargs = "?", complete = "dir" })
 	end
 
 	vim.keymap.set("n", "-", M.open_parent, { desc = "Open parent directory" })
