@@ -1,6 +1,6 @@
 -- Native LSP (nvim >= 0.11): server configs live in `lsp/<name>.lua` on the
 -- runtimepath and are picked up by `vim.lsp.enable`. Add a new server by
--- dropping a file in `lsp/` and listing its name here (or in post_init.lua).
+-- dropping a file in `lsp/` and listing its name here (or in `lsp = { servers = {...} }` in early_init.lua).
 local M = {}
 
 M.servers = { "lua_ls", "ts_ls", "rust_analyzer" }

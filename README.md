@@ -167,75 +167,59 @@ nvim
 
 And you’re good to go.
 
-## Configuration - Optional User Files
+## Configuration - `early_init.lua`
 
-This Neovim configuration supports **user-specific optional files** to
-customize behavior without modifying the main config. All these files are
-**git-ignored** by default.
+All personal customization lives in a single, **git-ignored** file next to
+`init.lua`. Start from the tracked example:
 
-If you'd like to customize **PureVim**, simply create these files in the same
-folder as this config `init.lua`.
-
-1. **`early_init.lua`** → runs first, can set globals or feature toggles. Users
-   **SHOULD** customize this file.
-
-2. **`init.lua`** → loads modules conditionally based on feature toggles. User
-   should **NOT** edit this file.
-
-3. **`post_init.lua`** → runs last, for final tweaks and personal
-   customization. Users **SHOULD** customize this file.
-
-> ⚡ If a file does not exist, it is simply skipped, and the config runs
-> normally.
-
-### 1. `early_init.lua`
-
-- **Purpose:** Runs **before the main config**.
-
-- **Use it for:** Setting global options, overriding defaults, changing leader
-  keys, or defining feature toggles.
-
-- **Example:**
-
-```lua -- ~/.config/nvim/early_init.lua
-
--- Or change the default colorscheme (see "Colorschemes" section below)
-vim.g.purevim_colorscheme = "gruvbox8"
+```bash
+cp ~/.config/nvim/early_init.example.lua ~/.config/nvim/early_init.lua
 ```
 
-You can also turn `PureVim` special features on/off, or even customize its
-setup. Just comment/uncomment what you need!
+> ⚡ If `early_init.lua` does not exist the config runs with the defaults.
+> **DO NOT** edit `init.lua` or `lua/core/*`: they are updated with `git pull`.
+
+`early_init.lua` runs **before** any PureVim module, so it is the place for:
+
+- **Leader keys** (defaults to `<Space>` only when you don't set one):
+
+  ```lua
+  vim.g.mapleader = ","
+  ```
+
+- **Feature toggles**: `false` disables a feature, a table configures it.
+
+  ```lua
+  vim.g.purevim_features = {
+  	-- dashboard = false,
+  	-- lazygit = false,
+  	-- usql = false,
+  	-- git = { signs = { staged = { add = "│", change = "│", delete = "_" } } },
+  	-- lsp = { servers = { "lua_ls", "ts_ls" } }, -- or false to disable LSP
+  	-- format = { typescript = { "prettier" }, lua = { "stylua" } },
+  }
+  ```
+
+### Running code after PureVim loads
+
+PureVim loads its modules deferred (`vim.defer_fn`) to keep startup fast, so
+code at the top level of `early_init.lua` runs *before* them. For keymaps,
+highlights or colorscheme tweaks that must win over the defaults, use the
+native `User PureVimLoaded` event, fired once every module is loaded:
 
 ```lua
-vim.g.purevim_features = {
-	-- dashboard = false, -- disable dashboard
-	-- git = { signs = { staged = { add = "│", change = "│", delete = "_" } } },
-	-- lsp = { servers = { "lua_ls", "ts_ls" } }, -- or false to disable LSP
-	-- lazygit = false, -- disable lazygit
-}
+vim.api.nvim_create_autocmd("User", {
+	pattern = "PureVimLoaded",
+	once = true,
+	callback = function()
+		vim.cmd.colorscheme("habamax")
+		vim.keymap.set("n", "<leader>tt", ":split | terminal<CR>", { desc = "Open terminal" })
+		vim.api.nvim_set_hl(0, "StatusLine", { fg = "#cdd6f4", bg = "#11111b" })
+	end,
+})
 ```
 
-### 2. `init.lua`
-
-This file orchestrates how everything is loaded with `PureVim`. **DO NOT** use
-this to add your own configs. Instead use `early_init.lua` or `post_init.lua`.
-
-### 3. `post_init.lua`
-
-- **Purpose:** Runs **after all core modules** have loaded.
-- **Use it for:** Adding personal keymaps, tweaks, custom autocommands, or
-  modifying highlights after the colorscheme.
-- **Example:**
-
-```lua -- ~/.config/nvim/post_init.lua
-
--- Custom keymap
-vim.keymap.set("n", "<leader>tt", ":split | terminal<CR>", { desc = "Open terminal" })
-
--- Tweak statusline colors after colorscheme
-vim.api.nvim_set_hl(0, "StatusLine", { fg = "#cdd6f4", bg = "#11111b" }) vim.api.nvim_set_hl(0,
-    "StatusLineNC", { fg = "#a6adc8", bg = "#292c3c" })
-```
+> `post_init.lua` was removed: the event above replaces it.
 
 ## Contributing
 

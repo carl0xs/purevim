@@ -1,6 +1,3 @@
-vim.g.mapleader = " "
-vim.g.maplocalleader = " "
-
 vim.opt.winborder = "single"
 vim.opt.fillchars = { eob = " " }
 vim.opt.updatetime = 1000
