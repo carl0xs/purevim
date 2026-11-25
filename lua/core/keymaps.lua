@@ -7,9 +7,9 @@ local git = require("core.integrations.git")
 map("n", "<C-s>", ":w<CR>")
 map("n", "<Esc>", ":noh<CR>", { silent = true })
 
-map("n", "<leader>ee", "<Cmd>Explore<CR>", { desc = "File explorer" })
+map("n", "<leader>e", "<Cmd>Explore<CR>", { desc = "File explorer" })
 
-map("n", "<leader>ev", function()
+map("n", "<leader>'", function()
 	vim.cmd("vsplit " .. vim.env.MYVIMRC)
 end, { desc = "Open init.lua in vertical split" })
 

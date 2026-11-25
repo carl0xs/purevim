@@ -226,7 +226,7 @@ vim.api.nvim_create_autocmd("User", {
 ## File explorer
 
 `-` opens the directory of the current file (also `nvim .`, `:e dir/`,
-`:Explore`, `:PureExplore [dir]`, `<leader>ee`). It is a regular buffer: edit
+`:Explore`, `:PureExplore [dir]`, `<leader>e`). It is a regular buffer: edit
 it with normal Vim motions and `:w` to apply the changes to the filesystem.
 
 | Edit in the buffer                     | Result on `:w`                 |
