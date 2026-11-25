@@ -2,7 +2,7 @@ local M = {}
 local api = vim.api
 local fn = vim.fn
 
-local elapsed = (vim.loop.hrtime() - (_G.start_time or vim.loop.hrtime())) / 1e6 -- convert nanoseconds to milliseconds
+local elapsed = (vim.uv.hrtime() - (_G.start_time or vim.uv.hrtime())) / 1e6 -- convert nanoseconds to milliseconds
 
 local config = {
   disable = false,
@@ -13,31 +13,17 @@ local config = {
   title = nil,
 
   buttons = {
-    { key = 'e', label = ' New file ',   action = ':enew<CR>' },
-    { key = 'f', label = ' Find file',   action = ':PureFzfProject<CR>' },
-    { key = 's', label = ' Settings ',    action = ':e $MYVIMRC<CR>' },
-    { key = 'q', label = ' Quit     ',    action = ':qa!<CR>' },
+    { key = 'e', label = ' New file ',   action = '<Cmd>enew<CR>' },
+    { key = 'f', label = ' Find file',   action = ':find ' },
+    { key = 's', label = ' Settings ',    action = '<Cmd>e $MYVIMRC<CR>' },
+    { key = 'q', label = ' Quit     ',    action = '<Cmd>qa!<CR>' },
   },
 
   footer = string.format("[PureVim] loaded in %.2f ms", elapsed),
 }
 
-function generate_header_title(title)
+local function generate_header_title(title)
   local header_title = title or config.title or "Purevim"
-
-  local ok, handle = pcall(io.popen, "figlet -f dos-rebel '%s'", header_title)
-
-  if ok and handle then
-    local result = handle:read("*a")
-    handle:close()
-    if result and #result > 0 then
-      local lines = {}
-      for line in result:gmatch("[^\n]+") do
-        table.insert(lines, line)
-      end
-      return lines
-    end
-  end
 
   if header_title == "Purevim" then
     return {
@@ -59,11 +45,11 @@ config.header = { title = generate_header_title() }
 
 -- UTIL
 local function buf_set_opts(buf)
-  api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-  api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
-  api.nvim_buf_set_option(buf, 'modifiable', false)
-  api.nvim_buf_set_option(buf, 'swapfile', false)
-  api.nvim_buf_set_option(buf, 'filetype', 'dashboard')
+  vim.bo[buf].buftype = 'nofile'
+  vim.bo[buf].bufhidden = 'wipe'
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].swapfile = false
+  vim.bo[buf].filetype = 'dashboard'
 end
 
 local function center_text(win_w, line)
@@ -135,12 +121,12 @@ local function draw_dashboard(buf, win)
 
   buf_set_opts(buf)
 
-  api.nvim_buf_set_option(buf, "modifiable", true)
+  vim.bo[buf].modifiable = true
 
   api.nvim_buf_set_lines(buf, 0, -1, false, centered_lines)
 
-  api.nvim_buf_set_option(buf, "modifiable", false)
-  api.nvim_buf_set_option(buf, "readonly", true)
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].readonly = true
 end
 
 
@@ -149,8 +135,8 @@ local function create_dashboard()
 
   local win = api.nvim_get_current_win()
 
-  api.nvim_win_set_option(win, 'number', false)
-  api.nvim_win_set_option(win, 'relativenumber', false)
+  vim.wo[win].number = false
+  vim.wo[win].relativenumber = false
 
   M._buf = buf
   M._win = win
@@ -161,10 +147,11 @@ local function create_dashboard()
 
   -- keymaps local to buffer
   for _, b in ipairs(config.buttons) do
-    api.nvim_buf_set_keymap(buf, 'n', b.key, b.action, { nowait = true, noremap = true, silent = true })
+    -- actions ending in a pending command line (e.g. ':find ') must not be silent
+    vim.keymap.set('n', b.key, b.action, { buffer = buf, nowait = true, silent = not b.action:match('^:') })
   end
 
-  api.nvim_buf_set_keymap(buf, 'n', '<CR>', [[<Cmd>lua require('core.dashboard').on_enter()<CR>]], { noremap = true, silent = true })
+  vim.keymap.set('n', '<CR>', M.on_enter, { buffer = buf, silent = true })
 
   return buf, win
 end
@@ -176,7 +163,7 @@ function M.on_enter()
   local line = api.nvim_buf_get_lines(buf, row - 1, row, false)[1] or ''
   for _, b in ipairs(config.buttons) do
     if line:find(' %[' .. b.key .. '%]') then
-      vim.cmd(b.action)
+      api.nvim_feedkeys(api.nvim_replace_termcodes(b.action, true, false, true), 'n', false)
       return
     end
   end
@@ -232,14 +219,21 @@ function M.setup(opts)
     draw_dashboard(M._buf, M._win)
   end
 
-  api.nvim_create_autocmd('VimEnter', {
-    callback = function()
-      local no_args = (#vim.fn.argv() == 0)
-      if not no_args then return end
-      if vim.fn.exists('g:loaded_dashboard_from_plugin') == 1 then return end
-      create_dashboard()
-    end
-  })
+  local function open()
+    if #vim.fn.argv() ~= 0 then return end
+    if vim.fn.exists('g:loaded_dashboard_from_plugin') == 1 then return end
+    -- only replace the initial empty buffer
+    local cur = api.nvim_get_current_buf()
+    if api.nvim_buf_get_name(cur) ~= '' or vim.bo[cur].modified or api.nvim_buf_line_count(cur) > 1 then return end
+    create_dashboard()
+  end
+
+  -- modules are loaded deferred, so VimEnter may already have fired
+  if vim.v.vim_did_enter == 1 then
+    open()
+  else
+    api.nvim_create_autocmd('VimEnter', { once = true, callback = open })
+  end
 end
 
 

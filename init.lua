@@ -1,14 +1,30 @@
 -- Main configuration Neovim
 -- Author: Carlos
 
-_G.start_time = vim.loop.hrtime()
+_G.start_time = vim.uv.hrtime()
 
 package.path = package.path .. ";" .. vim.fn.stdpath("config") .. "/?.lua"
 
 local later = require("utils.util").later
 
--- Load optional early_init.lua file
-pcall(require, "early_init")
+-- Optional user file (gitignored), see early_init.example.lua. It runs before
+-- anything else: set feature toggles, globals and a `User PureVimLoaded`
+-- autocmd for tweaks that must run after all modules are loaded.
+local user_file = vim.fn.stdpath("config") .. "/early_init.lua"
+if vim.uv.fs_stat(user_file) then
+	local ok, err = pcall(dofile, user_file)
+	if not ok then
+		vim.notify("[PureVim] error in early_init.lua: " .. err, vim.log.levels.ERROR)
+	end
+end
+
+-- Defaults that respect what the user set in early_init.lua
+if vim.g.mapleader == nil then
+	vim.g.mapleader = " "
+end
+if vim.g.maplocalleader == nil then
+	vim.g.maplocalleader = vim.g.mapleader
+end
 
 -- Feature toggles (users can set these in early_init.lua)
 local features = vim.g.purevim_features or {}
@@ -33,13 +49,13 @@ later(function()
 	require("core.keymaps")
 end)
 
-later(function()
-	require("core.integrations.git").setup()
+run_if_feat_enabled("git", function(opts)
+	require("core.integrations.git").setup(opts)
 end)
 
 -- Optional modules
-run_if_feat_enabled("lsp", function()
-	require("core.lsp").setup()
+run_if_feat_enabled("lsp", function(opts)
+	require("core.lsp").setup(opts)
 end)
 
 run_if_feat_enabled("autocmd", function()
@@ -58,11 +74,6 @@ run_if_feat_enabled("lazygit", function()
 	require("core.integrations.lazygit")
 end)
 
-run_if_feat_enabled("fzf", function(opts)
-	opts = opts or {}
-	require("core.integrations.fzf").setup(opts)
-end)
-
 run_if_feat_enabled("statusline", function()
 	require("core.statusline")
 end)
@@ -74,10 +85,13 @@ end)
 run_if_feat_enabled("dashboard", function()
 	require("core.dashboard").setup()
 end)
---
+
 run_if_feat_enabled("format", function(opts)
 	require("core.format").setup(opts)
 end)
 
--- Load optional post_init.lua file
-pcall(require, "post_init")
+-- Modules are loaded deferred (in order), so this runs after all of them.
+-- Hook user tweaks with: autocmd User PureVimLoaded
+later(function()
+	vim.api.nvim_exec_autocmds("User", { pattern = "PureVimLoaded", modeline = false })
+end)

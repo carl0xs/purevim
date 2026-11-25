@@ -1,5 +1,4 @@
 local map = vim.keymap.set
-local search = require("core.search")
 local bufopts = { noremap = true, silent = true }
 local git = require("core.integrations.git")
 
@@ -86,131 +85,27 @@ map("n", "<leader>tr", ":set relativenumber!<CR>", { desc = "Toggle [r]elative l
 map("n", "<leader>gb", git.toggle_blame, { desc = "Toggle inline git blame" })
 map("n", "]c", git.next_hunk, { desc = "Go to next git hunk" })
 map("n", "[c", git.prev_hunk, { desc = "Go to previous git hunk" })
-map("n", "<leader>gL", ":PureLazyGit<CR>")
-map("n", "<leader>gs", ":PureGitStatus<CR>")
+map("n", "<leader>gL", "<Cmd>PureLazyGit<CR>", { desc = "Lazygit (optional)" })
+map("n", "<leader>gs", git.status, { desc = "Git status in quickfix" })
 
-map("n", "<leader>gd", function()
-  local file = vim.fn.expand("%")
-  if file == "" then
-    vim.notify("No file name for current buffer", vim.log.levels.WARN)
-    return
-  end
-
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.cmd("vsplit")
-  vim.api.nvim_win_set_buf(0, buf)
-
-  local diff = vim.fn.systemlist({ "git", "diff", file })
-  if vim.v.shell_error ~= 0 then
-    vim.notify("git diff failed or repo not found", vim.log.levels.WARN)
-    return
-  end
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, diff)
-
-  vim.bo[buf].filetype = "diff"
-  vim.bo[buf].buflisted = false
-  vim.bo[buf].modifiable = false
-  vim.bo[buf].bufhidden = "wipe"
-end, { desc = "Git diff current file in disposable buffer" })
-
+map("n", "<leader>gd", git.diff, { desc = "Git diff current file in disposable buffer" })
 map("n", "<leader>gD", function()
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.cmd("vsplit")
-  vim.api.nvim_win_set_buf(0, buf)
-
-  local diff = vim.fn.systemlist({ "git", "diff" })
-  if vim.v.shell_error ~= 0 then
-    vim.notify("git diff failed or repo not found", vim.log.levels.WARN)
-    return
-  end
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, diff)
-
-  vim.bo[buf].filetype = "diff"
-  vim.bo[buf].buflisted = false
-  vim.bo[buf].modifiable = false
-  vim.bo[buf].bufhidden = "wipe"
+	git.diff(true)
 end, { desc = "Git diff entire repo in disposable buffer" })
-
-map("n", "<leader>ga", function()
-	local file = vim.fn.expand("%")
-	if file == "" then
-		vim.notify("No file name for current buffer", vim.log.levels.WARN)
-		return
-	end
-
-	local cursor_line = vim.fn.line(".")
-	local original_win = vim.api.nvim_get_current_win()
-
-	local buf = vim.api.nvim_create_buf(false, true)
-	local annotate = vim.fn.systemlist({ "git", "annotate", file })
-
-	for i, line in ipairs(annotate) do
-		local trimmed = line:match("^(%x+%s+%([^)]*%d+%))")
-		if trimmed then
-			annotate[i] = trimmed
-		end
-	end
-
-	if vim.v.shell_error ~= 0 then
-		vim.notify("git annotate failed or repo not found", vim.log.levels.WARN)
-		return
-	end
-
-	vim.api.nvim_buf_set_lines(buf, 0, -1, false, annotate)
-
-	vim.api.nvim_buf_call(buf, function()
-		vim.cmd([[
-              syntax match GitAnnotateHash /^\x\+/
-              syntax match GitAnnotateAuthor /(\zs[^)]*\d\{4\}-\d\{2\}-\d\{2\}/
-              syntax match GitAnnotateLineNr /\d\+)$/
-              highlight default link GitAnnotateHash Identifier
-              highlight default link GitAnnotateAuthor String
-              highlight default link GitAnnotateLineNr LineNr
-          ]])
-	end)
-
-	vim.bo[buf].modifiable = false
-	vim.bo[buf].buflisted = false
-
-	vim.cmd("topleft vsplit")
-	vim.api.nvim_win_set_buf(0, buf)
-
-	local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-	local max_width = 0
-	for _, l in ipairs(lines) do
-		local w = vim.fn.strdisplaywidth(l)
-		if w > max_width then
-			max_width = w
-		end
-	end
-
-	local final_width = max_width + 2
-	local win = vim.api.nvim_get_current_win()
-	vim.api.nvim_win_set_width(win, final_width)
-
-	local line_count = vim.api.nvim_buf_line_count(buf)
-	local target = math.min(cursor_line, line_count)
-	vim.api.nvim_win_set_cursor(0, { target, 0 })
-
-	vim.wo.scrollbind = true
-	vim.api.nvim_win_set_option(original_win, "scrollbind", true)
-	vim.wo[original_win].foldenable = false
-	vim.cmd("syncbind")
-	vim.api.nvim_set_current_win(original_win)
-end, { desc = "Git annotate current file" })
+map("n", "<leader>ga", git.annotate, { desc = "Git annotate current file" })
 
 -- Search (find and grep)
-map("n", "<leader>ff", ":PureFzfProject<CR>")
+map("n", "<leader>ff", ":find ", { desc = "Find file (fuzzy)" })
 map("n", "<leader>fi", ":find ")
 map("n", "<leader>vv", ":vert sf ")
 map("n", "<leader>b", ":b ")
 map("n", "<leader>fq", ":Findqf ")
 -- map("n", "<leader>fg", ":silent! grep ''<Left>", { desc = "Grep manually" })
 -- map("n", "<leader>fG", ":silent! grep <C-R><C-W><CR>", { desc = "Grep word under cursor" })
-map("n", "<leader>fg", ":PureRgProject<CR>", { desc = "Grep manually" })
-map("n", "<leader>fG", ":PureRgProject <C-R><C-W><CR>", { desc = "Grep word under cursor" })
+map("n", "<leader>fg", ":PureGrep ", { desc = "Grep project" })
+map("n", "<leader>fG", ":PureGrep <C-R><C-W><CR>", { desc = "Grep word under cursor" })
 map("n", "<leader>z", ":Zgrep ")
-map("n", "<leader>Z", ":Fzfgrep ")
+map("n", "<leader>Z", ":Zgrep <C-R><C-W><CR>", { desc = "Fuzzy grep word under cursor" })
 map("n", "<leader>cf", ":Cfilter ")
 map("n", "<leader>cz", ":Cfuzzy ")
 map("c", "<C-Space>", ".*", { noremap = true })

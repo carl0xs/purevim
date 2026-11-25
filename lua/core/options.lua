@@ -1,6 +1,3 @@
-vim.g.mapleader = " "
-vim.g.maplocalleader = " "
-
 vim.opt.winborder = "single"
 vim.opt.fillchars = { eob = " " }
 vim.opt.updatetime = 1000
@@ -23,7 +20,6 @@ vim.opt.clipboard = "unnamedplus"
 vim.opt.undofile = true
 vim.opt.splitright = true
 vim.opt.splitbelow = true
-vim.opt.completeopt = "menu,menuone,noselect"
 vim.opt.lazyredraw = true
 vim.opt.hidden = true
 -- see `:h completeopt`
@@ -45,9 +41,12 @@ vim.cmd([[
 ]])
 
 
-local ok, extui = pcall(require, "vim._extui")
-if ok then
-	extui.enable({
-		enable = true,
-	})
+-- Experimental built-in message/cmdline UI (`vim._extui` in 0.12,
+-- renamed to `vim._core.ui2` afterwards)
+for _, mod in ipairs({ "vim._core.ui2", "vim._extui" }) do
+	local ok, ui = pcall(require, mod)
+	if ok then
+		ui.enable({ enable = true })
+		break
+	end
 end

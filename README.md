@@ -1,7 +1,10 @@
 # PureVim - A Plugin-free Neovim Configuration
 
-A clean, efficient Neovim configuration that leverages built-in features and
-powerful external tools for a great editing experience.
+A clean, efficient Neovim configuration built **only on what ships with
+Neovim**: no plugins, no plugin manager and no "internal plugins" wrapping
+external TUIs. The only hard external dependency is `git` (for the git
+features); everything else (ripgrep, lazygit, usql, LSP servers, formatters)
+is optional and picked up when it is installed.
 
 <img width="1912" height="1017" alt="image" src="https://github.com/user-attachments/assets/dc70f57b-cd79-42ae-87ef-21a07ca8c118" />
 
@@ -25,18 +28,27 @@ This configuration is designed to be lightweight and fast:
   - [x] Autocomplete
 - [x] Useful autocommands
   - [x] Diagnostics float mouse hover
-  - [ ] autoformat
-- [x] File finder
-- [x] Text search
-- [x] Fuzzy Finding Files with preview on Project
-- [x] Greeping with preview on Project
+  - [x] autoformat
+- [x] Fuzzy file finder: `:find` + `findfunc` + `matchfuzzy`, with cmdline
+      autocompletion as you type (`<leader>ff`)
+- [x] Project grep into the quickfix list: `:PureGrep` (`<leader>fg`,
+      `<leader>fG` for word under cursor), refine with `:Cfilter` / `:Cfuzzy`
+- [x] Preview quickfix entries with `p` (keeps the focus on the list)
+- [x] Git signs computed in-process with `vim.text.diff` (update while typing),
+      hunk navigation `]c` / `[c`
+- [x] Inline git blame (`<leader>gb`), annotate (`<leader>ga`), diff
+      (`<leader>gd` / `<leader>gD`), status in quickfix (`<leader>gs`)
+- [x] Native LSP configs in `lsp/` enabled with `vim.lsp.enable`
+- [x] Native tree-sitter highlighting and folding
 
 ## TODOs
 
 - [ ] Look for TODOs in the code
 - [ ] Document how to install tree-sitter libraries
 - [ ] Document how to install supported LSP servers
-- [ ] Document how to add new LSP servers
+- [x] Document how to add new LSP servers: create `lsp/<name>.lua` returning
+      a `vim.lsp.Config` (`cmd`, `filetypes`, `root_markers`, `settings`) and add
+      `<name>` to `lsp = { servers = { ... } }` in `early_init.lua`
 - [ ] Document how to "auto complete"
 - [ ] Document default bindings
 - [ ] Customize auto-format functions
@@ -49,10 +61,17 @@ This configuration is designed to be lightweight and fast:
 - A [Nerd Font](https://www.nerdfonts.com/) installed and set as your terminal font (required for dashboard icons)
   - [JetBrainsMono Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/latest) is recommended (used in screenshots)
   - Quick installer: [nerd-installer](https://github.com/LionyxML/nerd-installer)
+- git
+
+Optional (used automatically when installed):
+
 - LSP servers for your languages
-- [Lazygit (Install)](https://github.com/jesseduffield/lazygit)
-- ripgrep
-- fzf
+- [ripgrep](https://github.com/BurntSushi/ripgrep) — faster `:grep`
+  (falls back to `grep`)
+- [Lazygit](https://github.com/jesseduffield/lazygit) — `<leader>gL`
+  (falls back to `:PureGitStatus`)
+- [usql](https://github.com/xo/usql) — `:PureSqlConnect`
+- formatters configured in the `format` feature (prettier, stylua, ...)
 
 ## Installation
 
@@ -117,13 +136,11 @@ The script will:
 - Check for the required dependencies and alert you if something is missing
 - Dependencies checked by the script:
   - nvim
-  - lazygit
-  - rg (ripgrep)
-  - fzf
+  - git
+  - rg (ripgrep, optional)
   - lua-language-server
   - rust-analyzer
   - typescript-language-server
-  - bat
 
 ### 3. Manual Installation
 
@@ -137,14 +154,10 @@ git clone https://github.com/carl0xs/purevim.git ~/.config/nvim
 
 Then manually ensure all dependencies are installed on your system:
 
-- nvim (≥ 0.10.0)
-- lazygit
-- rg (ripgrep)
-- fzf
-- lua-language-server
-- rust-analyzer
-- typescript-language-server
-- bat
+- nvim (≥ 0.12.0)
+- git
+- optional: rg (ripgrep), lazygit, usql, lua-language-server, rust-analyzer,
+  typescript-language-server
 
 Once everything is ready, just launch Neovim:
 
@@ -154,80 +167,59 @@ nvim
 
 And you’re good to go.
 
-## Configuration - Optional User Files
+## Configuration - `early_init.lua`
 
-This Neovim configuration supports **user-specific optional files** to
-customize behavior without modifying the main config. All these files are
-**git-ignored** by default.
+All personal customization lives in a single, **git-ignored** file next to
+`init.lua`. Start from the tracked example:
 
-If you'd like to customize **PureVim**, simply create these files in the same
-folder as this config `init.lua`.
-
-1. **`early_init.lua`** → runs first, can set globals or feature toggles. Users
-   **SHOULD** customize this file.
-
-2. **`init.lua`** → loads modules conditionally based on feature toggles. User
-   should **NOT** edit this file.
-
-3. **`post_init.lua`** → runs last, for final tweaks and personal
-   customization. Users **SHOULD** customize this file.
-
-> ⚡ If a file does not exist, it is simply skipped, and the config runs
-> normally.
-
-### 1. `early_init.lua`
-
-- **Purpose:** Runs **before the main config**.
-
-- **Use it for:** Setting global options, overriding defaults, changing leader
-  keys, or defining feature toggles.
-
-- **Example:**
-
-```lua -- ~/.config/nvim/early_init.lua
-
--- Or change the default colorscheme (see "Colorschemes" section below)
-vim.g.purevim_colorscheme = "gruvbox8"
+```bash
+cp ~/.config/nvim/early_init.example.lua ~/.config/nvim/early_init.lua
 ```
 
-You can also turn `PureVim` special features on/off, or even customize its
-setup. Just comment/uncomment what you need!
+> ⚡ If `early_init.lua` does not exist the config runs with the defaults.
+> **DO NOT** edit `init.lua` or `lua/core/*`: they are updated with `git pull`.
+
+`early_init.lua` runs **before** any PureVim module, so it is the place for:
+
+- **Leader keys** (defaults to `<Space>` only when you don't set one):
+
+  ```lua
+  vim.g.mapleader = ","
+  ```
+
+- **Feature toggles**: `false` disables a feature, a table configures it.
+
+  ```lua
+  vim.g.purevim_features = {
+  	-- dashboard = false,
+  	-- lazygit = false,
+  	-- usql = false,
+  	-- git = { signs = { staged = { add = "│", change = "│", delete = "_" } } },
+  	-- lsp = { servers = { "lua_ls", "ts_ls" } }, -- or false to disable LSP
+  	-- format = { typescript = { "prettier" }, lua = { "stylua" } },
+  }
+  ```
+
+### Running code after PureVim loads
+
+PureVim loads its modules deferred (`vim.defer_fn`) to keep startup fast, so
+code at the top level of `early_init.lua` runs *before* them. For keymaps,
+highlights or colorscheme tweaks that must win over the defaults, use the
+native `User PureVimLoaded` event, fired once every module is loaded:
 
 ```lua
-vim.g.purevim_features = {
-	-- dashboard = false, -- disable dashboard
-	-- fzf = { -- configure FZF or set to false to disable
-	-- 	position = "bottom",
-	-- 	width_ratio = 1,
-	-- 	height_ratio = 0.3,
-	-- 	border = "none",
-	-- },
-	-- lsp = false, -- disable LSP
-	-- lazygit = false, -- disable lazygit
-}
+vim.api.nvim_create_autocmd("User", {
+	pattern = "PureVimLoaded",
+	once = true,
+	callback = function()
+		vim.cmd.colorscheme("habamax")
+		vim.keymap.set("n", "<leader>tt", ":split | terminal<CR>", { desc = "Open terminal" })
+		vim.api.nvim_set_hl(0, "StatusLine", { fg = "#cdd6f4", bg = "#11111b" })
+	end,
+})
 ```
 
-### 2. `init.lua`
-
-This file orchestrates how everything is loaded with `PureVim`. **DO NOT** use
-this to add your own configs. Instead use `early_init.lua` or `post_init.lua`.
-
-### 3. `post_init.lua`
-
-- **Purpose:** Runs **after all core modules** have loaded.
-- **Use it for:** Adding personal keymaps, tweaks, custom autocommands, or
-  modifying highlights after the colorscheme.
-- **Example:**
-
-```lua -- ~/.config/nvim/post_init.lua
-
--- Custom keymap
-vim.keymap.set("n", "<leader>tt", ":split | terminal<CR>", { desc = "Open terminal" })
-
--- Tweak statusline colors after colorscheme
-vim.api.nvim_set_hl(0, "StatusLine", { fg = "#cdd6f4", bg = "#11111b" }) vim.api.nvim_set_hl(0,
-    "StatusLineNC", { fg = "#a6adc8", bg = "#292c3c" })
-```
+> `post_init.lua` was removed: the event above replaces it.
 
 ## Contributing
 

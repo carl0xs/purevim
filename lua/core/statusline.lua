@@ -1,24 +1,19 @@
--- Cache git branch per buffer
+local git = require("core.integrations.git")
+
+-- Cache git branch per buffer (git.branch only reads .git/HEAD, but the
+-- statusline is redrawn very often)
 local git_cache = {}
 
 local function git_branch()
   local buf = vim.api.nvim_get_current_buf()
-  -- use cached value if available
-  if git_cache[buf] then
-    return git_cache[buf]
-  end
-
-  local file_dir = vim.fn.expand("%:p:h")
-  local branch = vim.fn.systemlist("git -C " .. file_dir .. " rev-parse --abbrev-ref HEAD")[1]
-  if branch and branch ~= "" and branch ~= "HEAD" then
-    if #branch > 25 then
+  if git_cache[buf] == nil then
+    local branch = git.branch(buf)
+    if branch and #branch > 25 then
       branch = branch:sub(1, 25) .. "…"
     end
-    git_cache[buf] = " " .. branch
-    return git_cache[buf]
+    git_cache[buf] = branch and (" " .. branch) or false
   end
-  git_cache[buf] = nil
-  return nil
+  return git_cache[buf] or nil
 end
 
 local function short_filename()
@@ -31,9 +26,8 @@ local function short_filename()
   return dirname .. "/" .. filename
 end
 
-
--- Clear cache when buffer is left or git branch might change
-vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
+-- Clear cache when buffer is entered or git branch might change
+vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "FocusGained" }, {
   callback = function()
     git_cache = {}
   end,
@@ -54,4 +48,3 @@ end
 vim.opt.laststatus = 3
 vim.opt.statusline = "%!v:lua.statusline()"
 _G.statusline = statusline
-

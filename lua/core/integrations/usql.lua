@@ -10,7 +10,7 @@ M.load_connections = function()
     local content = file:read("*a")
     file:close()
     if content ~= "" then
-      local success, data = pcall(vim.fn.json_decode, content)
+      local success, data = pcall(vim.json.decode, content)
       if success and data then
         M.connections = data.connections or {}
         M.last_connection = data.last_connection
@@ -26,7 +26,7 @@ M.save_connections = function()
   }
   local file = io.open(M.connections_file, "w")
   if file then
-    file:write(vim.fn.json_encode(data))
+    file:write(vim.json.encode(data))
     file:close()
   end
 end
@@ -117,6 +117,11 @@ M.quick_connect = function()
 end
 
 M.open_connection = function(name, connection_string)
+  if vim.fn.executable("usql") == 0 then
+    vim.notify("✗ USQL: usql executable not found", vim.log.levels.ERROR)
+    return
+  end
+
   local open_usql_term = function()
     local buf = vim.api.nvim_create_buf(false, true)
     vim.cmd("belowright 15split")
@@ -124,9 +129,10 @@ M.open_connection = function(name, connection_string)
     vim.api.nvim_win_set_buf(win, buf)
 
     vim.api.nvim_buf_set_name(buf, "usql:" .. name)
-    vim.api.nvim_win_set_option(win, "winbar", "USQL: " .. name)
+    vim.wo[win].winbar = "USQL: " .. name
     local cmd = "usql " .. vim.fn.shellescape(connection_string)
-    vim.fn.termopen(cmd, {
+    vim.fn.jobstart(cmd, {
+      term = true,
       on_exit = function(_, code)
         if code ~= 0 then
           print("✗ USQL: Connection to '" .. name .. "' failed")
