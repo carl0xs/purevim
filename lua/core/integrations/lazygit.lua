@@ -1,37 +1,12 @@
--- Open lazygit in a floating terminal that auto-closes
-function LazyGitFloating()
-	-- Calculate floating window size
-	local width = math.floor(vim.o.columns * 0.8)
-	local height = math.floor(vim.o.lines * 0.8)
-	local row = math.floor((vim.o.lines - height) / 2)
-	local col = math.floor((vim.o.columns - width) / 2)
+-- Optional: lazygit in a floating terminal (only if lazygit is installed).
+-- Everything else git related works with plain `git`, see core.integrations.git
+local util = require("utils.util")
 
-	-- Create a scratch buffer
-	local buf = vim.api.nvim_create_buf(false, true)
-
-	-- Open floating window
-	local win = vim.api.nvim_open_win(buf, true, {
-		relative = "editor",
-		width = width,
-		height = height,
-		row = row,
-		col = col,
-		style = "minimal",
-	})
-
-	-- Start lazygit in terminal
-	vim.fn.termopen("lazygit", {
-		on_exit = function()
-			-- Close buffer and window when process exits
-			if vim.api.nvim_buf_is_valid(buf) then
-				vim.api.nvim_buf_delete(buf, { force = true })
-			end
-		end,
-	})
-
-	-- Enter insert mode automatically
-	vim.cmd("startinsert")
-end
-
--- Create a user command to call it
-vim.api.nvim_create_user_command("PureLazyGit", LazyGitFloating, {})
+vim.api.nvim_create_user_command("PureLazyGit", function()
+	if vim.fn.executable("lazygit") == 0 then
+		vim.notify("lazygit not found, falling back to :PureGitStatus", vim.log.levels.WARN)
+		require("core.integrations.git").status()
+		return
+	end
+	util.float_term({ "lazygit" }, { cwd = util.project_root() })
+end, {})

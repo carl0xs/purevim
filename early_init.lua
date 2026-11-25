@@ -10,13 +10,8 @@ vim.cmd("colorscheme gruvbox8")
 vim.g.purevim_features = {
 	-- colorscheme = false, -- disable colorscheme
 	-- dashboard = false, -- disable dashboard
-	-- fzf = { -- configure FZF or set to false to disable
-	-- 	position = "bottom",
-	-- 	width_ratio = 1,
-	-- 	height_ratio = 0.3,
-	-- 	border = "none",
-	-- },
-	-- lsp = false, -- disable LSP
+	-- git = { signs = { staged = { add = "│", change = "│", delete = "_" } } },
+	-- lsp = { servers = { "lua_ls", "ts_ls" } }, -- or false to disable LSP
 	-- lazygit = false, -- disable lazygit
 	-- format = {
 	-- 	typescript = { "prettier" },

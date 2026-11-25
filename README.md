@@ -1,7 +1,10 @@
 # PureVim - A Plugin-free Neovim Configuration
 
-A clean, efficient Neovim configuration that leverages built-in features and
-powerful external tools for a great editing experience.
+A clean, efficient Neovim configuration built **only on what ships with
+Neovim**: no plugins, no plugin manager and no "internal plugins" wrapping
+external TUIs. The only hard external dependency is `git` (for the git
+features); everything else (ripgrep, lazygit, usql, LSP servers, formatters)
+is optional and picked up when it is installed.
 
 <img width="1912" height="1017" alt="image" src="https://github.com/user-attachments/assets/dc70f57b-cd79-42ae-87ef-21a07ca8c118" />
 
@@ -25,18 +28,27 @@ This configuration is designed to be lightweight and fast:
   - [x] Autocomplete
 - [x] Useful autocommands
   - [x] Diagnostics float mouse hover
-  - [ ] autoformat
-- [x] File finder
-- [x] Text search
-- [x] Fuzzy Finding Files with preview on Project
-- [x] Greeping with preview on Project
+  - [x] autoformat
+- [x] Fuzzy file finder: `:find` + `findfunc` + `matchfuzzy`, with cmdline
+      autocompletion as you type (`<leader>ff`)
+- [x] Project grep into the quickfix list: `:PureGrep` (`<leader>fg`,
+      `<leader>fG` for word under cursor), refine with `:Cfilter` / `:Cfuzzy`
+- [x] Preview quickfix entries with `p` (keeps the focus on the list)
+- [x] Git signs computed in-process with `vim.text.diff` (update while typing),
+      hunk navigation `]c` / `[c`
+- [x] Inline git blame (`<leader>gb`), annotate (`<leader>ga`), diff
+      (`<leader>gd` / `<leader>gD`), status in quickfix (`<leader>gs`)
+- [x] Native LSP configs in `lsp/` enabled with `vim.lsp.enable`
+- [x] Native tree-sitter highlighting and folding
 
 ## TODOs
 
 - [ ] Look for TODOs in the code
 - [ ] Document how to install tree-sitter libraries
 - [ ] Document how to install supported LSP servers
-- [ ] Document how to add new LSP servers
+- [x] Document how to add new LSP servers: create `lsp/<name>.lua` returning
+      a `vim.lsp.Config` (`cmd`, `filetypes`, `root_markers`, `settings`) and add
+      `<name>` to `lsp = { servers = { ... } }` in `early_init.lua`
 - [ ] Document how to "auto complete"
 - [ ] Document default bindings
 - [ ] Customize auto-format functions
@@ -49,10 +61,17 @@ This configuration is designed to be lightweight and fast:
 - A [Nerd Font](https://www.nerdfonts.com/) installed and set as your terminal font (required for dashboard icons)
   - [JetBrainsMono Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/latest) is recommended (used in screenshots)
   - Quick installer: [nerd-installer](https://github.com/LionyxML/nerd-installer)
+- git
+
+Optional (used automatically when installed):
+
 - LSP servers for your languages
-- [Lazygit (Install)](https://github.com/jesseduffield/lazygit)
-- ripgrep
-- fzf
+- [ripgrep](https://github.com/BurntSushi/ripgrep) — faster `:grep`
+  (falls back to `grep`)
+- [Lazygit](https://github.com/jesseduffield/lazygit) — `<leader>gL`
+  (falls back to `:PureGitStatus`)
+- [usql](https://github.com/xo/usql) — `:PureSqlConnect`
+- formatters configured in the `format` feature (prettier, stylua, ...)
 
 ## Installation
 
@@ -117,13 +136,11 @@ The script will:
 - Check for the required dependencies and alert you if something is missing
 - Dependencies checked by the script:
   - nvim
-  - lazygit
-  - rg (ripgrep)
-  - fzf
+  - git
+  - rg (ripgrep, optional)
   - lua-language-server
   - rust-analyzer
   - typescript-language-server
-  - bat
 
 ### 3. Manual Installation
 
@@ -137,14 +154,10 @@ git clone https://github.com/carl0xs/purevim.git ~/.config/nvim
 
 Then manually ensure all dependencies are installed on your system:
 
-- nvim (≥ 0.10.0)
-- lazygit
-- rg (ripgrep)
-- fzf
-- lua-language-server
-- rust-analyzer
-- typescript-language-server
-- bat
+- nvim (≥ 0.12.0)
+- git
+- optional: rg (ripgrep), lazygit, usql, lua-language-server, rust-analyzer,
+  typescript-language-server
 
 Once everything is ready, just launch Neovim:
 
@@ -196,13 +209,8 @@ setup. Just comment/uncomment what you need!
 ```lua
 vim.g.purevim_features = {
 	-- dashboard = false, -- disable dashboard
-	-- fzf = { -- configure FZF or set to false to disable
-	-- 	position = "bottom",
-	-- 	width_ratio = 1,
-	-- 	height_ratio = 0.3,
-	-- 	border = "none",
-	-- },
-	-- lsp = false, -- disable LSP
+	-- git = { signs = { staged = { add = "│", change = "│", delete = "_" } } },
+	-- lsp = { servers = { "lua_ls", "ts_ls" } }, -- or false to disable LSP
 	-- lazygit = false, -- disable lazygit
 }
 ```

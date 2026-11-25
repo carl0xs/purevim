@@ -15,9 +15,10 @@
     {
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
+          ripgrep # optional: faster :grep
+          # Optional integrations
           usql
           lazygit
-					bat
           # Neovim itself
           neovim
 
@@ -28,7 +29,6 @@
 
           # Formatters
           stylua
-          figlet
         ];
       };
     };

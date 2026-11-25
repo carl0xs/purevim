@@ -1,68 +1,41 @@
-local M = { path = {} }
-
-local nvim_eleven = vim.fn.has("nvim-0.11") == 1
+local M = {}
 
 function M.later(fn)
 	vim.defer_fn(fn, 0)
 end
 
-function M.search_ancestors(startpath, func)
-	if nvim_eleven then
-		vim.validate("func", func, "function")
-	end
-	if func(startpath) then
-		return startpath
-	end
-	local guard = 100
-	for path in vim.fs.parents(startpath) do
-		-- Prevent infinite recursion if our algorithm breaks
-		guard = guard - 1
-		if guard == 0 then
-			return
-		end
-
-		if func(path) then
-			return path
-		end
-	end
+-- Root of the current project: nearest `.git` upwards, falling back to cwd
+function M.project_root(buf)
+	return vim.fs.root(buf or 0, ".git") or vim.fn.getcwd()
 end
 
-function M.tbl_flatten(t)
-	--- @diagnostic disable-next-line:deprecated
-	return nvim_eleven and vim.iter(t):flatten(math.huge):totable() or vim.tbl_flatten(t)
-end
+-- Run `cmd` in a floating `:terminal` that closes when the process exits
+function M.float_term(cmd, opts)
+	opts = opts or {}
+	local width = math.floor(vim.o.columns * (opts.width_ratio or 0.8))
+	local height = math.floor(vim.o.lines * (opts.height_ratio or 0.8))
 
-function M.strip_archive_subpath(path)
-	-- Matches regex from zip.vim / tar.vim
-	path = vim.fn.substitute(path, "zipfile://\\(.\\{-}\\)::[^\\\\].*$", "\\1", "")
-	path = vim.fn.substitute(path, "tarfile:\\(.\\{-}\\)::.*$", "\\1", "")
-	return path
-end
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_open_win(buf, true, {
+		relative = "editor",
+		width = width,
+		height = height,
+		row = math.floor((vim.o.lines - height) / 2),
+		col = math.floor((vim.o.columns - width) / 2),
+		style = "minimal",
+		border = opts.border,
+	})
 
-local function escape_wildcards(path)
-	return path:gsub("([%[%]%?%*])", "\\%1")
-end
-
-function M.root_pattern(...)
-	local patterns = M.tbl_flatten({ ... })
-	return function(startpath)
-		startpath = M.strip_archive_subpath(startpath)
-		for _, pattern in ipairs(patterns) do
-			local match = M.search_ancestors(startpath, function(path)
-				for _, p in ipairs(vim.fn.glob(table.concat({ escape_wildcards(path), pattern }, "/"), true, true)) do
-					if vim.loop.fs_stat(p) then
-						return path
-					end
-				end
-			end)
-
-			if match ~= nil then
-				return match
+	vim.fn.jobstart(cmd, {
+		term = true,
+		cwd = opts.cwd,
+		on_exit = function()
+			if vim.api.nvim_buf_is_valid(buf) then
+				vim.api.nvim_buf_delete(buf, { force = true })
 			end
-		end
-	end
+		end,
+	})
+	vim.cmd("startinsert")
 end
-
-M.path.dirname = vim.fs.dirname
 
 return M

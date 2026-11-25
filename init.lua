@@ -1,7 +1,7 @@
 -- Main configuration Neovim
 -- Author: Carlos
 
-_G.start_time = vim.loop.hrtime()
+_G.start_time = vim.uv.hrtime()
 
 package.path = package.path .. ";" .. vim.fn.stdpath("config") .. "/?.lua"
 
@@ -33,13 +33,13 @@ later(function()
 	require("core.keymaps")
 end)
 
-later(function()
-	require("core.integrations.git").setup()
+run_if_feat_enabled("git", function(opts)
+	require("core.integrations.git").setup(opts)
 end)
 
 -- Optional modules
-run_if_feat_enabled("lsp", function()
-	require("core.lsp").setup()
+run_if_feat_enabled("lsp", function(opts)
+	require("core.lsp").setup(opts)
 end)
 
 run_if_feat_enabled("autocmd", function()
@@ -56,11 +56,6 @@ end)
 
 run_if_feat_enabled("lazygit", function()
 	require("core.integrations.lazygit")
-end)
-
-run_if_feat_enabled("fzf", function(opts)
-	opts = opts or {}
-	require("core.integrations.fzf").setup(opts)
 end)
 
 run_if_feat_enabled("statusline", function()

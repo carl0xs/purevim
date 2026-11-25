@@ -1,72 +1,26 @@
+-- Native LSP (nvim >= 0.11): server configs live in `lsp/<name>.lua` on the
+-- runtimepath and are picked up by `vim.lsp.enable`. Add a new server by
+-- dropping a file in `lsp/` and listing its name here (or in post_init.lua).
 local M = {}
-local function file_exists(pattern)
-	return vim.fn.glob(pattern) ~= ""
-end
 
-local function is_lua_project()
-	return file_exists("lua_ls.json") or file_exists(".luarc.json") or vim.fn.isdirectory("lua") == 1
-end
+M.servers = { "lua_ls", "ts_ls", "rust_analyzer" }
 
-local function is_ts_project()
-	return file_exists("package.json") or file_exists("tsconfig.json") or file_exists("jsconfig.json")
-end
+function M.setup(opts)
+	opts = opts or {}
 
-local function is_rust_project()
-	return file_exists("Cargo.toml")
-end
-
-local servers = {
-	lua_ls = {
-		config = require("lsp.lua_ls"),
-		filetype = "lua",
-		check_root = is_lua_project,
-	},
-	tsserver = {
-		config = require("lsp.typescript"),
-		filetype = {
-			"javascript",
-			"javascriptreact",
-			"javascript.jsx",
-			"typescript",
-			"typescriptreact",
-			"typescript.tsx",
-		},
-		check_root = is_ts_project,
-	},
-	rust_analyzer = {
-		config = require("lsp.rust"),
-		filetype = "rust",
-		check_root = is_rust_project,
-	},
-}
-
-local function start_server(name, server)
-	if not server or not server.config then
-		return
-	end
-	-- Only attach if project check passes
-	if server.check_root and not server.check_root() then
-		return
-	end
-
-	vim.api.nvim_create_autocmd("FileType", {
-		pattern = server.filetype,
-		callback = function()
-			vim.lsp.start({
-				name = server.config.name,
-				cmd = server.config.cmd,
-				root_dir = server.config.root_dir,
-				capabilities = server.config.capabilities,
-				settings = server.config.settings,
-			})
-		end,
+	vim.lsp.config("*", {
+		capabilities = vim.lsp.protocol.make_client_capabilities(),
 	})
-end
 
-function M.setup()
-	for name, server in pairs(servers) do
-		start_server(name, server)
+	-- Only enable servers whose binary is installed, to avoid noisy errors
+	local enabled = {}
+	for _, name in ipairs(opts.servers or M.servers) do
+		local cmd = (vim.lsp.config[name] or {}).cmd
+		if type(cmd) ~= "table" or vim.fn.executable(cmd[1]) == 1 then
+			table.insert(enabled, name)
+		end
 	end
+	vim.lsp.enable(enabled)
 end
 
 return M

@@ -20,17 +20,17 @@ install_deps() {
     sudo apt update
     sudo apt install -y \
       git ninja-build gettext cmake unzip curl build-essential pkg-config \
-      ripgrep fzf figlet lua-language-server rust-analyzer nodejs npm
+      ripgrep lua-language-server rust-analyzer nodejs npm
     sudo npm install -g typescript-language-server
   elif command_exists dnf; then
     sudo dnf install -y \
       git ninja-build gettext cmake unzip curl gcc gcc-c++ make pkgconfig \
-      ripgrep fzf figlet lua-language-server rust-analyzer nodejs npm
+      ripgrep lua-language-server rust-analyzer nodejs npm
     sudo npm install -g typescript-language-server
   elif command_exists pacman; then
     sudo pacman -Sy --noconfirm \
       git ninja gettext cmake unzip curl base-devel pkgconf \
-      ripgrep fzf figlet lua-language-server rust-analyzer nodejs npm
+      ripgrep lua-language-server rust-analyzer nodejs npm
     sudo npm install -g typescript-language-server
   else
     msg "Unsupported package manager. Install dependencies manually."
@@ -56,15 +56,6 @@ install_neovim_from_source() {
   msg "Neovim installed."
 }
 
-check_figlet_font() {
-  if ! figlet -f dos-rebel "PureVim" >/dev/null 2>&1; then
-    msg "dos-rebel figlet font missing. Installing locally."
-
-    mkdir -p "${HOME}/.figlet"
-    curl -fsSL https://raw.githubusercontent.com/xero/figlet-fonts/master/ANSI%20Shadow.flf \
-      -o "${HOME}/.figlet/dos-rebel.flf" || true
-  fi
-}
 
 install_purevim() {
   msg "Installing PureVim..."
@@ -83,7 +74,6 @@ main() {
 
   install_deps
   install_neovim_from_source
-  check_figlet_font
   install_purevim
 
   msg "Done"

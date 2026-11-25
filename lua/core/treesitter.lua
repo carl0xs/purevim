@@ -1,41 +1,30 @@
+-- Native tree-sitter: highlighting, folding and indentation.
+-- Neovim ships parsers for c, lua, vim, vimdoc, query and markdown; other
+-- languages need their parser in a `parser/` directory on the runtimepath.
+
 -- Folding setup
 vim.o.foldmethod = "expr"
-vim.o.foldexpr = "nvim_treesitter#foldexpr()"
+vim.o.foldexpr = "v:lua.vim.treesitter.foldexpr()"
 vim.o.foldlevelstart = 99
 
--- Start Tree-sitter parsing for every file type
+-- Start Tree-sitter parsing for every file type that has a parser
 vim.api.nvim_create_autocmd("FileType", {
-	callback = function()
-		pcall(vim.treesitter.start)
+	group = vim.api.nvim_create_augroup("PureTreesitter", { clear = true }),
+	callback = function(ev)
+		pcall(vim.treesitter.start, ev.buf)
 	end,
 })
 
--- Highlight Tree-sitter captures using standard Vim groups
-vim.api.nvim_create_autocmd("FileType", {
-	callback = function()
-		vim.cmd([[
-      highlight link @function Function
-      highlight link @method Function
-      highlight link @variable Variable
-      highlight link @parameter Identifier
-      highlight link @keyword Keyword
-      highlight link @string String
-      highlight link @type Type
-      highlight link @comment Comment
-      highlight link @constant Constant
-      highlight link @number Number
-      highlight link @boolean Boolean
-      highlight link @operator Operator
-      highlight link @property Identifier
-      highlight link @field Identifier
-      highlight link @punctuation Delimiter
-    ]])
-	end,
-})
+-- Buffers opened before this module was loaded (it is loaded deferred)
+for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+	if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype ~= "" then
+		pcall(vim.treesitter.start, buf)
+	end
+end
 
 function PureCheckTreesitter()
-	local parser = vim.treesitter.get_parser(0) -- current buffer
-	if parser then
+	local ok, parser = pcall(vim.treesitter.get_parser, 0)
+	if ok and parser then
 		print("Tree-sitter is running on parser: " .. parser:lang())
 	else
 		print("No Tree-sitter parser attached to this buffer")
