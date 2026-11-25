@@ -29,6 +29,13 @@ end
 -- Feature toggles (users can set these in early_init.lua)
 local features = vim.g.purevim_features or {}
 
+-- The explorer replaces netrw (and the read-only `nvim.dir` listing of
+-- nvim >= 0.13); this must happen before plugins load
+if features.explorer ~= false then
+	vim.g.loaded_netrwPlugin = 1
+	vim.g.loaded_nvim_dir_plugin = true
+end
+
 -- Helper to conditionally run modules
 local function run_if_feat_enabled(feature, fn)
 	local conf = features[feature]
@@ -64,6 +71,10 @@ end)
 
 run_if_feat_enabled("treesitter", function()
 	require("core.treesitter")
+end)
+
+run_if_feat_enabled("explorer", function(opts)
+	require("core.explorer").setup(opts)
 end)
 
 run_if_feat_enabled("search", function()
